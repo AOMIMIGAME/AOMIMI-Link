@@ -66,6 +66,11 @@ struct MainStruct {
 	C2D_Sprite pretendo_unloaded_selected;
 	C2D_Sprite pretendo_loaded_selected;
 	C2D_Sprite pretendo_loaded_deselected;
+	// aomimi: 3 つ目のボタン
+	C2D_Sprite aomimi_unloaded_deselected;
+	C2D_Sprite aomimi_unloaded_selected;
+	C2D_Sprite aomimi_loaded_selected;
+	C2D_Sprite aomimi_loaded_deselected;
 	C2D_Sprite top;
 
 	u32 screen = 0;

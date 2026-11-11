@@ -1,0 +1,24 @@
+#!/bin/bash
+# Builds only the Nimbus app CIA inside devkitpro/devkitarm. Azahar uses HLE, so the IPS patches are not needed.
+set -eu
+export DEVKITPRO=/opt/devkitpro DEVKITARM=/opt/devkitpro/devkitARM
+export PATH=$DEVKITPRO/tools/bin:$DEVKITARM/bin:$PATH
+apt-get -qq update >/dev/null && apt-get -qq install -y curl unzip g++ make >/dev/null 2>&1 || true
+dkp-pacman -Sy --noconfirm --needed libctru citro2d citro3d 3ds-curl 3ds-mbedtls 3ds-zlib 3ds-jansson 3dstools tex3ds 2>&1 | tail -2
+mkdir -p /tools
+if ! command -v makerom >/dev/null; then
+    curl -fsSL -o /tmp/mr.zip https://github.com/3DSGuy/Project_CTR/releases/download/makerom-v0.18.4/makerom-v0.18.4-ubuntu_x86_64.zip
+    unzip -oq /tmp/mr.zip -d /tools
+fi
+if ! command -v bannertool >/dev/null; then
+    curl -fsSL -o /tmp/bt.zip https://github.com/diasurgical/bannertool/releases/download/1.2.0/bannertool.zip
+    unzip -oq /tmp/bt.zip -d /tmp/bt
+    cp /tmp/bt/linux-x86_64/bannertool /tools/
+fi
+chmod +x /tools/*
+export PATH=/tools:$PATH
+makerom -v 2>&1 | head -1 || true
+cd /src/app
+make clean >/dev/null 2>&1 || true
+make cia -j4 2>&1 | tail -8
+ls -la /src/app/*.cia

@@ -31,12 +31,12 @@ include $(DEVKITARM)/3ds_rules
 #     - icon.png
 #     - <libctru folder>/default_icon.png
 #---------------------------------------------------------------------------------
-APP_TITLE       := 	Nimbus
-APP_DESCRIPTION := 	Nimbus
+APP_TITLE       := 	AOMIMI Link
+APP_DESCRIPTION := 	AOMIMI Network / Pretendo / Nintendo
 APP_AUTHOR	:=	Zaksabeast, shutterbug2000
 TARGET		:=	nimbus
 BUILD		:=	build
-SOURCES		:=	source source/states source/sysmodules
+SOURCES		:=	source source/states source/sysmodules source/aomimi
 DATA		:=	data
 INCLUDES	:=	include
 ROMFS		:=	romfs

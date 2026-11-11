@@ -14,6 +14,7 @@
 #include "../sysmodules/acta.hpp"
 #include "../sysmodules/httpc.hpp"
 #include "../plgldr.h"
+#include "../aomimi/aomimi.hpp"
 
 constexpr Result ResultFPDLocalAccountNotExists = 0xC880C4ED; // FPD::LocalAccountNotExists
 const char *NIMBUS_PLUGIN = "/luma/plugins/nimbus.3gx";
@@ -503,9 +504,10 @@ void MainUI::drawPrompt(MainStruct* mainStruct)
 bool MainUI::drawUI(MainStruct *mainStruct, C3D_RenderTarget* top_screen, C3D_RenderTarget* bottom_screen, u32 kDown, u32 kHeld, touchPosition touch)
 {
     C2D_SceneBegin(top_screen);
-    DrawScamWarning();
+    Aomimi::drawScamWarning(); // aomimi: 名前が長くなったので 3 行に
     DrawVersionString();
     C2D_DrawSprite(&mainStruct->top);
+    Aomimi::drawNotice(); // aomimi: 元にした Nimbus と、関係がないことの表示
 
     // Check if Nimbus has been updated
     if (!mainStruct->updateChecked) {
@@ -688,46 +690,18 @@ bool MainUI::drawUI(MainStruct *mainStruct, C3D_RenderTarget* top_screen, C3D_Re
     }
 
     C2D_SceneBegin(bottom_screen);
-    DrawControls();
+    Aomimi::drawControls(mainStruct); // aomimi: プラグインは配らない。PNID の解除は Pretendo を選んでいるときだけ
 
-    if (mainStruct->buttonSelected == NascEnvironment::NASC_ENV_Prod) {
-        if (mainStruct->currentAccount == NascEnvironment::NASC_ENV_Prod) {
-            C2D_DrawSprite(&mainStruct->nintendo_loaded_selected);
-            C2D_DrawSprite(&mainStruct->pretendo_unloaded_deselected);
-        }
-        else {
-            C2D_DrawSprite(&mainStruct->nintendo_unloaded_selected);
-            C2D_DrawSprite(&mainStruct->pretendo_loaded_deselected);
-        }
-    }
-    else if (mainStruct->buttonSelected == NascEnvironment::NASC_ENV_Test) {
-        if (mainStruct->currentAccount == NascEnvironment::NASC_ENV_Test) {
-            C2D_DrawSprite(&mainStruct->nintendo_unloaded_deselected);
-            C2D_DrawSprite(&mainStruct->pretendo_loaded_selected);
-        }
-        else {
-            C2D_DrawSprite(&mainStruct->nintendo_loaded_deselected);
-            C2D_DrawSprite(&mainStruct->pretendo_unloaded_selected);
-        }
-    }
+    Aomimi::drawButtons(mainStruct); // aomimi: AOMIMI、Pretendo、任天堂の 3 つ
     C2D_DrawSprite(&mainStruct->header);
     drawPrompt(mainStruct);
 
     // Only allow user interaction when the system doesn't need a restart
     if (!mainStruct->needsReboot && !mainStruct->prompt.active) {
         // handle touch input
-        if (kDown & KEY_TOUCH) {
-            if ((touch.px >= 165 && touch.px <= 165 + 104) && (touch.py >= 59 && touch.py <= 59 + 113)) {
-                mainStruct->buttonSelected = NascEnvironment::NASC_ENV_Prod;
-                mainStruct->buttonWasPressed = true;
-            }
-            else if ((touch.px >= 49 && touch.px <= 49 + 104) && (touch.py >= 59 && touch.py <= 59 + 113)) {
-                mainStruct->buttonSelected = NascEnvironment::NASC_ENV_Test;
-                mainStruct->buttonWasPressed = true;
-            }
-        }
-        else if (kDown & KEY_LEFT || kDown & KEY_RIGHT) {
-            mainStruct->buttonSelected = mainStruct->buttonSelected == NascEnvironment::NASC_ENV_Test ? NascEnvironment::NASC_ENV_Prod : NascEnvironment::NASC_ENV_Test;
+        // aomimi: 3 つのボタンの選択
+        if (Aomimi::handleButtonInput(mainStruct, kDown, touch)) {
+            mainStruct->buttonWasPressed = true;
         }
 
         if (mainStruct->prompt.active) {
@@ -738,7 +712,7 @@ bool MainUI::drawUI(MainStruct *mainStruct, C3D_RenderTarget* top_screen, C3D_Re
             mainStruct->buttonWasPressed = true;
         }
 
-        if (kDown & KEY_X) {
+        if ((kDown & KEY_X) && mainStruct->buttonSelected == NascEnvironment::NASC_ENV_Test) { // aomimi: Pretendo を選んでいるときだけ
             // We need to confirm we actually even have a linked PNID.
 	        if (R_SUCCEEDED(retPNID)) {
 		        if (R_FAILED(retPNID = ACT_GetAccountIndexOfFriendAccountId(&pnidAccountSlot, 2))) {
@@ -765,7 +739,7 @@ bool MainUI::drawUI(MainStruct *mainStruct, C3D_RenderTarget* top_screen, C3D_Re
 	        }
         }
 
-        if (kDown & KEY_Y) {
+        if ((kDown & KEY_Y) && Aomimi::PLUGIN_ENABLED) { // aomimi: プラグインは配らない
             launchPlugin(mainStruct);
             mainStruct->buttonWasPressed = false;
             return false;
@@ -777,22 +751,32 @@ bool MainUI::drawUI(MainStruct *mainStruct, C3D_RenderTarget* top_screen, C3D_Re
         mainStruct->errorString[0] = 0;
 
         // If the chosen account is the one we are already logged into, exit without rebooting
-        if (mainStruct->currentAccount == mainStruct->buttonSelected) return true;
+        if (mainStruct->currentAccount == mainStruct->buttonSelected) {
+            // aomimi: アカウントは変わらずオンラインのままなので、ここでイベントの相手をフレンドに足す
+            if ((u8)mainStruct->buttonSelected + 1 == Aomimi::ACCOUNT_ID) {
+                Aomimi::addEventPlayers(mainStruct);
+                if (mainStruct->errorString[0] != 0) {
+                    mainStruct->buttonWasPressed = false;
+                    return false;
+                }
+            }
+            return true;
+        }
 
         u8 accountId = (u8)mainStruct->buttonSelected + 1; // by default set accountId to nasc environment + 1
 
         Result rc = unloadAccount(mainStruct);
         if (R_SUCCEEDED(rc)) {
             rc = switchAccounts(mainStruct, accountId);
-            if (rc == ResultFPDLocalAccountNotExists && accountId == 2) {
+            if (rc == ResultFPDLocalAccountNotExists && (accountId == 2 || accountId == Aomimi::ACCOUNT_ID)) { // aomimi: 3 も作る
                 // Clear the error to allow createAccount to override it
                 memset(mainStruct->errorString, 0, 256);
-                rc = createAccount(mainStruct, accountId, NascEnvironment::NASC_ENV_Test);
+                rc = createAccount(mainStruct, accountId, Aomimi::environmentOf(accountId));
             }
         }
 
         if (R_SUCCEEDED(rc)) {
-            rc = handleAzahar(accountId);
+            rc = Aomimi::handleAzahar(accountId); // aomimi: 公式の処理のあとに AOMIMI の規則
             LOG_NIMBUS_ERROR(mainStruct, std::format("Failed to apply Azahar configuration: {}", rc).c_str());
         }
 

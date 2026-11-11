@@ -1,0 +1,6 @@
+# make_buttons.py / make_meta.py が作る途中の画像と、見比べ用の A のロゴ版
+icon_button*.png
+icon_*_turtle.png
+icon_source_a.png
+variants/
+__pycache__/

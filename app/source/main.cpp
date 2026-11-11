@@ -8,13 +8,14 @@
 #include "common.hpp"
 #include "states/LumaValidation.hpp"
 #include "states/MainUI.hpp"
+#include "aomimi/aomimi.hpp"
 
 MainStruct mainStruct = MainStruct();
 
 static void sceneInit(void)
 {
 	C2D_SpriteSheet spriteSheet = C2D_SpriteSheetLoadFromMem(sheet_t3x, sheet_t3x_size);
-	C2D_SpriteFromSheet(&mainStruct.top, spriteSheet, sheet_top_idx);
+	C2D_SpriteFromSheet(&mainStruct.top, spriteSheet, sheet_aomimi_top_idx); // aomimi: Pretendo のロゴの代わり
 	C2D_SpriteFromSheet(&mainStruct.go_back, spriteSheet, sheet_go_back_idx);
 	C2D_SpriteFromSheet(&mainStruct.header, spriteSheet, sheet_header_idx);
 	C2D_SpriteFromSheet(&mainStruct.nintendo_unloaded_deselected, spriteSheet, sheet_nintendo_unloaded_deselected_idx);
@@ -25,6 +26,10 @@ static void sceneInit(void)
 	C2D_SpriteFromSheet(&mainStruct.pretendo_unloaded_selected, spriteSheet, sheet_pretendo_unloaded_selected_idx);
 	C2D_SpriteFromSheet(&mainStruct.pretendo_loaded_selected, spriteSheet, sheet_pretendo_loaded_selected_idx);
 	C2D_SpriteFromSheet(&mainStruct.pretendo_loaded_deselected, spriteSheet, sheet_pretendo_loaded_deselected_idx);
+	C2D_SpriteFromSheet(&mainStruct.aomimi_unloaded_deselected, spriteSheet, sheet_aomimi_unloaded_deselected_idx);
+	C2D_SpriteFromSheet(&mainStruct.aomimi_unloaded_selected, spriteSheet, sheet_aomimi_unloaded_selected_idx);
+	C2D_SpriteFromSheet(&mainStruct.aomimi_loaded_selected, spriteSheet, sheet_aomimi_loaded_selected_idx);
+	C2D_SpriteFromSheet(&mainStruct.aomimi_loaded_deselected, spriteSheet, sheet_aomimi_loaded_deselected_idx);
 	C2D_SpriteSetCenter(&mainStruct.top, 0.49f, 0.49f);
 	C2D_SpriteSetPos(&mainStruct.top, 400/2, 240/2);
 	C2D_SpriteSetPos(&mainStruct.go_back, 0, 214);
@@ -37,6 +42,7 @@ static void sceneInit(void)
 	C2D_SpriteSetPos(&mainStruct.nintendo_unloaded_selected, 165, 59);
 	C2D_SpriteSetPos(&mainStruct.nintendo_unloaded_deselected, 165, 59);
 	C2D_SpriteSetPos(&mainStruct.nintendo_loaded_deselected, 165, 59);
+	Aomimi::placeButtons(&mainStruct); // aomimi: 3 つ並べ直す
 	
 	textBuf = C2D_TextBufNew(4096); // initialize the text buffer with a max glyph count of 4096
 }
