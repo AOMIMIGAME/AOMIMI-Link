@@ -36,11 +36,11 @@ def make_banner():
     banner.alpha_composite(turtle, (14, (112 - turtle.height) // 2))
 
     title = ImageFont.truetype(FONT_BOLD, 30)
-    sub = ImageFont.truetype(FONT, 9)
+    sub = ImageFont.truetype(FONT, 12)
     draw.text((116, 22), 'AOMIMI', font=title, fill=(255, 255, 255, 255))
     draw.text((118, 58), 'Link', font=ImageFont.truetype(FONT_BOLD, 18), fill=ACCENT)
-    line = 'AOMIMI Network / Pretendo / Nintendo'
-    draw.text(((256 - draw.textlength(line, font=sub)) / 2, 108), line, font=sub, fill=(200, 205, 215, 255))
+    line = 'Account switcher for Azahar'
+    draw.text(((256 - draw.textlength(line, font=sub)) / 2, 104), line, font=sub, fill=(200, 205, 215, 255))
     banner.save(os.path.join(META, 'banner.png'))
 
 

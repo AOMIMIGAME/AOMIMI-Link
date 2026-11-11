@@ -32,8 +32,8 @@ include $(DEVKITARM)/3ds_rules
 #     - <libctru folder>/default_icon.png
 #---------------------------------------------------------------------------------
 APP_TITLE       := 	AOMIMI Link
-APP_DESCRIPTION := 	AOMIMI Network / Pretendo / Nintendo
-APP_AUTHOR	:=	Zaksabeast, shutterbug2000
+APP_DESCRIPTION := 	AOMIMI Link
+APP_AUTHOR	:=	AOMIMIGAME
 TARGET		:=	nimbus
 BUILD		:=	build
 SOURCES		:=	source source/states source/sysmodules source/aomimi

@@ -1,29 +1,45 @@
-# Nimbus
-## Pretendo account manager for the 3DS
+# AOMIMI Link
+## AOMIMI Network / Pretendo / Nintendo account manager for Azahar
+
+AOMIMI Link is a modified version of [Nimbus](https://github.com/PretendoNetwork/nimbus) by Pretendo Network.
+It is not affiliated with Pretendo Network or Nintendo. Please do not contact Pretendo Network about AOMIMI Link.
+
+[日本語](README.ja.md)
 
 ## Usage
 
-1. Grab the latest app and IPS patches from the [Releases](https://github.com/PretendoNetwork/nimbus/releases) page
-2. Extract to the root of your 3DS SD card
-3. Install the Nimbus homebrew using FBI (or FBI Reloaded) if using the CIA build
-4. Run the Nimbus homebrew and select either to use a Pretendo or Nintendo account
-     - If it doesn't work, reboot your 3DS while holding SELECT and ensure that "Enable loading external FIRMs and modules" and "Enable game patching" are both turned on, as well as ensuring that your Luma3DS version is 13.0 or higher.
-5. Enable the Nimbus plugin by entering into the Rosalina menu and setting the "Plugin Loader" to "Enabled"
+1. Scan the URL below with "Remote Install" → "Scan QR Code" in FBI (or grab `aomimi-link.cia` from the [Releases](https://github.com/AOMIMIGAME/AOMIMI-Link/releases) page and install it using FBI)
+    - `https://github.com/AOMIMIGAME/AOMIMI-Link/releases/latest/download/aomimi-link.cia`
+2. Run AOMIMI Link in Azahar and select whether to use an AOMIMI, Pretendo or Nintendo account
+    - The first time you select AOMIMI, a new account for AOMIMI Network is created
+    - Selecting AOMIMI also adds the event players to your friend list (if that fails, they are added the next time you open AOMIMI Link)
+    - Switching accounts reboots the system
+
+- Opening AOMIMI Link on a Pretendo or Nintendo account removes any leftover event players from that friend list (other friends are not touched)
+- AOMIMI Link is for Azahar only. The IPS patches and the plugin for real hardware are not included
+- To update, scan the same URL with FBI again. It always installs the latest version
 
 ## Building
 
-1. Clone the repository recursively using `git clone https://github.com/PretendoNetwork/nimbus --recursive`
-    - If you have cloned the repository previously, please run `git pull` and `make clean` while in the nimbus folder to avoid errors and broken files
-    - On top of that, if you cloned it before 1.0.2 released, you might also need to run `git submodule update --init --recursive` while in the nimbus folder
-2. Install devkitARM, libctru 2.5.0 or later, `3ds-curl`, `3ds-mbedtls`, `3ds-zlib`, [CTRPluginFramework](https://gitlab.com/thepixellizeross/ctrpluginframework), [3gxtool](https://gitlab.com/thepixellizeross/3gxtool), [armips](https://github.com/Kingcom/armips), [makerom](https://github.com/3DSGuy/Project_CTR), [bannertool](https://github.com/Steveice10/bannertool) and [flips](https://github.com/Alcaro/Flips)
-3. Copy [decompressed `code.bin`](https://github.com/PretendoNetwork/nimbus/blob/main/DECOMPRESSING.md) files from the act, friends, http, miiverse, socket and ssl sysmodules in their respective `patches` directories (any Miiverse code.bin works for the miiverse module)
-4. Run `make`
+1. Clone the repository using `git clone https://github.com/AOMIMIGAME/AOMIMI-Link`
+2. Run the build script in the devkitARM image with Docker
+    - `docker run --rm -v "$PWD:/src" devkitpro/devkitarm:latest bash /src/build-in-docker.sh`
+3. You will get `app/nimbus.cia`
+
+- To regenerate the button and icon images, run `python make_buttons.py` and `python make_meta.py` in `app/aomimi` (requires Pillow)
+- Updates to the original Nimbus are checked and merged daily by GitHub Actions
+
+## License
+
+AOMIMI Link is distributed under the GNU General Public License v3.0, the same as Nimbus (see [LICENSE](LICENSE)).
+The changes from Nimbus are listed in [AOMIMI.md](AOMIMI.md).
 
 ## Credits
 
 Thanks to:
 
-- [pinklimes](https://github.com/gitlimes) for the CIA version banner
+- [Pretendo Network](https://github.com/PretendoNetwork) for Nimbus, which AOMIMI Link is based on
+- [pinklimes](https://github.com/gitlimes) for the Nimbus CIA version banner
 - [TraceEntertains](https://github.com/TraceEntertains) for making a CIA version of Nimbus and maintaining the project
 - [DaniElectra](https://github.com/DaniElectra) for making the 3DS HTTP and Socket patches and maintaining the project
 - [SciresM](https://github.com/SciresM) for making the 3DS SSL patches

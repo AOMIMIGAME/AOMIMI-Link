@@ -5,6 +5,91 @@
 #include "../sysmodules/httpc.hpp"
 
 namespace {
+    // * イベントの相手をフレンドに足す。login なら必要に応じてログインする。report なら失敗を画面の文に残す
+    void addPlayers(MainStruct *mainStruct, bool login, bool report) {
+        constexpr s64 waitNanoseconds = 15000000000LL;
+
+        Handle event = 0;
+        Result rc = svcCreateEvent(&event, RESET_ONESHOT);
+        if (R_FAILED(rc)) {
+            if (report) {
+                LOG_NIMBUS_ERROR(mainStruct, std::format("Event players: event failed {:08X}", (u32)rc).c_str());
+            }
+            return;
+        }
+
+        bool online = false;
+        FRD_IsOnline(&online);
+        if (!online && login) {
+            rc = FRD_Login(event);
+            if (R_SUCCEEDED(rc)) {
+                rc = svcWaitSynchronization(event, waitNanoseconds);
+            }
+            FRD_IsOnline(&online);
+        }
+
+        if (!online) {
+            if (report) {
+                LOG_NIMBUS_ERROR(mainStruct, std::format("Event players: not online {:08X}", (u32)rc).c_str());
+            }
+            svcCloseHandle(event);
+            return;
+        }
+
+        bool added = false;
+        for (const u32 pid : Aomimi::EVENT_PLAYERS) {
+            u64 friendCode = 0;
+            bool known = false;
+            if (R_FAILED(FRD_PrincipalIdToFriendCode(pid, &friendCode)) || R_FAILED(FRD_IsInFriendList(friendCode, &known)) || known) {
+                continue;
+            }
+
+            svcClearEvent(event);
+            rc = FRDA_AddFriendOnline(event, pid);
+            if (R_SUCCEEDED(rc)) {
+                rc = svcWaitSynchronization(event, waitNanoseconds);
+            }
+            if (R_FAILED(rc)) {
+                if (report) {
+                    LOG_NIMBUS_ERROR(mainStruct, std::format("Event players: add failed {:08X}", (u32)rc).c_str());
+                }
+                continue;
+            }
+            added = true;
+        }
+
+        if (added) {
+            rc = FRDA_Save();
+            if (R_FAILED(rc) && report) {
+                LOG_NIMBUS_ERROR(mainStruct, std::format("Event players: save failed {:08X}", (u32)rc).c_str());
+            }
+        }
+
+        svcCloseHandle(event);
+    }
+
+    // * 今のアカウントのフレンド一覧から、イベントの相手だけを消す（ほかのフレンドには触らない）
+    void removeEventPlayers() {
+        constexpr u32 limit = 100; // * 3DS のフレンドは 100 人まで
+        static FriendKey keys[limit];
+        u32 count = 0;
+        if (R_FAILED(FRD_GetFriendKeyList(keys, &count, 0, limit))) {
+            return;
+        }
+
+        bool removed = false;
+        for (u32 n = 0; n < count && n < limit; n++) {
+            for (const u32 pid : Aomimi::EVENT_PLAYERS) {
+                if (keys[n].principalId == pid && R_SUCCEEDED(FRDA_RemoveFriend(pid, keys[n].localFriendCode))) {
+                    removed = true;
+                }
+            }
+        }
+        if (removed) {
+            FRDA_Save();
+        }
+    }
+
     constexpr Result ResultAlreadyExists = MAKERESULT(RL_STATUS, RS_INVALIDARG, RM_HTTP, RD_ALREADY_EXISTS);
     constexpr Result ResultNoAzaharCommand = MAKERESULT(RL_PERMANENT, RS_WRONGARG, RM_OS, 47);
 
@@ -69,59 +154,47 @@ namespace Aomimi {
     }
 
     void addEventPlayers(MainStruct *mainStruct) {
-        constexpr s64 waitNanoseconds = 15000000000LL;
+        addPlayers(mainStruct, true, true);
+    }
 
-        Handle event = 0;
-        Result rc = svcCreateEvent(&event, RESET_ONESHOT);
-        if (R_FAILED(rc)) {
-            LOG_NIMBUS_ERROR(mainStruct, std::format("Event players: event failed {:08X}", (u32)rc).c_str());
+    void addEventPlayersAfterSwitch(MainStruct *mainStruct) {
+        // * unloadAccount で入った「通信をしない状態」を解いて、ネットにつながるのを少し待つ
+        if (R_FAILED(NDMU_LeaveExclusiveState())) {
             return;
         }
-
-        bool online = false;
-        FRD_IsOnline(&online);
-        if (!online) {
-            rc = FRD_Login(event);
-            if (R_SUCCEEDED(rc)) {
-                rc = svcWaitSynchronization(event, waitNanoseconds);
+        const bool ac = R_SUCCEEDED(acInit());
+        if (ac) {
+            for (int n = 0; n < 40; n++) {
+                u32 status = 0;
+                if (R_SUCCEEDED(ACU_GetWifiStatus(&status)) && status != 0) {
+                    break;
+                }
+                svcSleepThread(250000000LL);
             }
-            FRD_IsOnline(&online);
         }
+        addPlayers(mainStruct, true, false);
+        if (ac) {
+            acExit();
+        }
+    }
 
-        if (!online) {
-            LOG_NIMBUS_ERROR(mainStruct, std::format("Event players: not online {:08X}", (u32)rc).c_str());
-            svcCloseHandle(event);
+    void checkEventPlayersOnce(MainStruct *mainStruct) {
+        static bool checked = false;
+        if (checked) {
             return;
         }
-
-        bool added = false;
-        for (const u32 pid : EVENT_PLAYERS) {
-            u64 friendCode = 0;
-            bool known = false;
-            if (R_FAILED(FRD_PrincipalIdToFriendCode(pid, &friendCode)) || R_FAILED(FRD_IsInFriendList(friendCode, &known)) || known) {
-                continue;
-            }
-
-            svcClearEvent(event);
-            rc = FRDA_AddFriendOnline(event, pid);
-            if (R_SUCCEEDED(rc)) {
-                rc = svcWaitSynchronization(event, waitNanoseconds);
-            }
-            if (R_FAILED(rc)) {
-                LOG_NIMBUS_ERROR(mainStruct, std::format("Event players: add failed {:08X}", (u32)rc).c_str());
-                continue;
-            }
-            added = true;
+        checked = true;
+        if (mainStruct->needsReboot || mainStruct->errorString[0] != 0) {
+            return;
         }
-
-        if (added) {
-            rc = FRDA_Save();
-            if (R_FAILED(rc)) {
-                LOG_NIMBUS_ERROR(mainStruct, std::format("Event players: save failed {:08X}", (u32)rc).c_str());
-            }
+        if (mainStruct->currentAccount != NascEnvironment::NASC_ENV_Dev) {
+            // * Pretendo や任天堂のアカウントに、前の版で足したイベントの相手が残っていれば消す。
+            // * この PID は AOMIMI Network の中だけの番号で、ほかのサーバーでは別の人に割り振られるかもしれない
+            removeEventPlayers();
+            return;
         }
-
-        svcCloseHandle(event);
+        // * 起動したときにオンラインなら、足りない相手だけ黙って足す（ログインはしない。待たせないため）
+        addPlayers(mainStruct, false, false);
     }
 }
 
