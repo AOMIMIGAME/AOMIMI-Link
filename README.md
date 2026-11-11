@@ -1,7 +1,7 @@
 # AOMIMI Link
-## AOMIMI Network / Pretendo / Nintendo account manager for Azahar
+## Account manager for Azahar
 
-AOMIMI Link is a modified version of [Nimbus](https://github.com/PretendoNetwork/nimbus) by Pretendo Network.
+AOMIMI Link is a modified version of [Nimbus](https://github.com/PretendoNetwork/nimbus) by Pretendo Network. It switches between AOMIMI Network, Pretendo and Nintendo accounts.
 It is not affiliated with Pretendo Network or Nintendo. Please do not contact Pretendo Network about AOMIMI Link.
 
 [日本語](README.ja.md)
