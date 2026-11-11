@@ -1,0 +1,83 @@
+# 公式の Nimbus に新しいリリースが出たら取り込み、作ってリリースに出す。
+# - 毎日 6:00（日本時間）と手動で動く
+# - きれいに取り込めたら main に push し、「公式の版-aomimi.番号」のタグでリリースを出す（最新になる）
+# - ぶつかって取り込めなかったら、Issue を立てて知らせる（手で直す）
+# - 前のリリースは消さないので、困ったら 1 つ前のリリースを最新に戻せばよい
+name: Follow upstream Nimbus
+
+on:
+  schedule:
+    - cron: '0 21 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    outputs:
+      updated: ${{ steps.merge.outputs.updated }}
+      sha: ${{ steps.merge.outputs.sha }}
+      release_tag: ${{ steps.merge.outputs.release_tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Merge the latest upstream release
+        id: merge
+        run: |
+          set -eu
+          git config user.name AOMIMIGAME
+          git config user.email 351324329+AOMIMIGAME@users.noreply.github.com
+          git remote add upstream https://github.com/PretendoNetwork/nimbus.git
+
+          tag=$(curl -fsSL https://api.github.com/repos/PretendoNetwork/nimbus/releases/latest \
+            | python3 -c 'import json, sys; print(json.load(sys.stdin)["tag_name"])')
+          echo "upstream_tag=$tag" >> "$GITHUB_OUTPUT"
+          git fetch --no-tags upstream "refs/tags/$tag:refs/tags/upstream/$tag"
+
+          if git merge-base --is-ancestor "upstream/$tag" HEAD; then
+            echo "Upstream $tag is already merged"
+            echo "updated=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if ! git merge --no-edit -m "Merge upstream Nimbus $tag" "upstream/$tag"; then
+            git merge --abort
+            echo "Merging upstream $tag failed"
+            echo "conflict=true" >> "$GITHUB_OUTPUT"
+            echo "updated=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          n=1
+          while git ls-remote --exit-code --tags origin "refs/tags/$tag-aomimi.$n" > /dev/null; do
+            n=$((n + 1))
+          done
+
+          git push origin HEAD:main
+          echo "updated=true" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "release_tag=$tag-aomimi.$n" >> "$GITHUB_OUTPUT"
+
+      - name: Report the conflict
+        if: steps.merge.outputs.conflict == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.merge.outputs.upstream_tag }}
+        run: |
+          title="公式 Nimbus $TAG の取り込みでぶつかりました"
+          if gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "$title in:title" --json number --jq 'length' | grep -qx 0; then
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "公式の Nimbus $TAG を main に取り込もうとして、変更がぶつかりました。手で取り込んで（git merge upstream/$TAG）、ぶつかったところを直してください。リリースは出していません。"
+          fi
+
+  release:
+    needs: merge
+    if: needs.merge.outputs.updated == 'true'
+    uses: ./.github/workflows/build.yml
+    with:
+      ref: ${{ needs.merge.outputs.sha }}
+      release_tag: ${{ needs.merge.outputs.release_tag }}

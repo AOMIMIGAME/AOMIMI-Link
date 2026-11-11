@@ -1,6 +1,8 @@
 #!/bin/bash
-# Builds only the Nimbus app CIA inside devkitpro/devkitarm. Azahar uses HLE, so the IPS patches are not needed.
+# Builds only the AOMIMI Link app CIA inside devkitpro/devkitarm. Azahar uses HLE, so the IPS patches are not needed.
+# SRC is the repository root (default /src for the local docker run; GitHub Actions passes its workspace).
 set -eu
+SRC="${SRC:-/src}"
 export DEVKITPRO=/opt/devkitpro DEVKITARM=/opt/devkitpro/devkitARM
 export PATH=$DEVKITPRO/tools/bin:$DEVKITARM/bin:$PATH
 apt-get -qq update >/dev/null && apt-get -qq install -y curl unzip g++ make >/dev/null 2>&1 || true
@@ -18,7 +20,7 @@ fi
 chmod +x /tools/*
 export PATH=/tools:$PATH
 makerom -v 2>&1 | head -1 || true
-cd /src/app
+cd "$SRC/app"
 make clean >/dev/null 2>&1 || true
 make cia -j4 2>&1 | tail -8
-ls -la /src/app/*.cia
+ls -la "$SRC"/app/*.cia
