@@ -12,12 +12,12 @@ Pretendo Network および任天堂とは関係ありません。AOMIMI Link に
     - `https://github.com/AOMIMIGAME/AOMIMI-Link/releases/latest/download/aomimi-link.cia`
 2. Azahar で AOMIMI Link を起動し、AOMIMI・Pretendo・Nintendo のどのアカウントを使うかを選ぶ
     - AOMIMI を初めて選んだときは、AOMIMI Network 用のアカウントが新しく作られます
-    - AOMIMI を選ぶと、イベントの相手もフレンドに追加されます（追加できなかったときは、次に AOMIMI Link を開いたときに追加されます）
+    - AOMIMI を選ぶと、イベント対戦管理 bot もフレンドに追加されます（追加できなかった場合は、次に AOMIMI Link を開いたときに追加されます）
     - アカウントを切り替えると、本体が再起動します
 
-- Pretendo か Nintendo のアカウントで AOMIMI Link を開くと、そのフレンド一覧に残っているイベントの相手を消します（ほかのフレンドには触りません）
+- Pretendo か Nintendo のアカウントで AOMIMI Link を開くと、そのフレンド一覧に残っているイベント対戦管理 bot は削除されます（ほかのフレンドは変更されません）
 - AOMIMI Link は Azahar 専用です。実機用の IPS パッチとプラグインは含まれていません
-- 更新するときは、同じ URL を FBI でもう一度読み込んでください。いつも最新版が入ります
+- 更新するときは、同じ URL を FBI でもう一度読み込んでください。常に最新版がインストールされます
 
 ## ビルド
 

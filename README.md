@@ -12,12 +12,12 @@ It is not affiliated with Pretendo Network or Nintendo. Please do not contact Pr
     - `https://github.com/AOMIMIGAME/AOMIMI-Link/releases/latest/download/aomimi-link.cia`
 2. Run AOMIMI Link in Azahar and select whether to use an AOMIMI, Pretendo or Nintendo account
     - The first time you select AOMIMI, a new account for AOMIMI Network is created
-    - Selecting AOMIMI also adds the event players to your friend list (if that fails, they are added the next time you open AOMIMI Link)
+    - Selecting AOMIMI also adds the event battle bots to your friend list (if this fails, they will be added the next time AOMIMI Link is opened)
     - Switching accounts reboots the system
 
-- Opening AOMIMI Link on a Pretendo or Nintendo account removes any leftover event players from that friend list (other friends are not touched)
+- When AOMIMI Link is opened on a Pretendo or Nintendo account, any remaining event battle bots are removed from that friend list (other friends are not affected)
 - AOMIMI Link is for Azahar only. The IPS patches and the plugin for real hardware are not included
-- To update, scan the same URL with FBI again. It always installs the latest version
+- To update, scan the same URL with FBI again. The latest version is always installed
 
 ## Building
 
