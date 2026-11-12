@@ -21,7 +21,22 @@ namespace Aomimi {
     // * フレンドのアカウントを作るときの環境（2 = Pretendo は Test、3 = AOMIMI は Dev）
     NascEnvironment environmentOf(u8 friend_account_id);
 
-    // * 下の画面の 3 つのボタン（AOMIMI、Pretendo、任天堂）
+    // * --- AOMIMI のアカウントの接続先（AOMIMI Network か、別の住所か）---
+    // * 起動したときに SD（3ds/aomimi/server.txt）から今の接続先を読む
+    void initServer(MainStruct *mainStruct);
+    bool currentAlternate();
+    bool selectedAlternate();
+    void selectAlternate(bool alternate);
+    // * 同じ AOMIMI のアカウントのまま、接続先だけを切り替えるとき true
+    bool serverChangeRequested(MainStruct *mainStruct);
+    // * 接続先だけを切り替える（Azahar の規則か IPS を入れ直す。このあと再起動する）
+    Result switchServer(MainStruct *mainStruct);
+
+    // * --- 画面の部品（ui/ui.cpp。手元だけの設定で差し替えられる）---
+    // * 別の接続先を選べるか、その住所
+    bool hasAlternate();
+    const char *alternateHost();
+    // * 下の画面のボタン（AOMIMI、Pretendo、任天堂）。起動したときに 1 回、絵の位置を決める
     void placeButtons(MainStruct *mainStruct);
     void drawButtons(MainStruct *mainStruct);
     // * 触った・左右を押したときの選択。ボタンを触ったら true（決定）

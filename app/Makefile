@@ -36,7 +36,7 @@ APP_DESCRIPTION := 	AOMIMI Link
 APP_AUTHOR	:=	AOMIMIGAME
 TARGET		:=	nimbus
 BUILD		:=	build
-SOURCES		:=	source source/states source/sysmodules source/aomimi
+SOURCES		:=	source source/states source/sysmodules source/aomimi source/aomimi/ui
 DATA		:=	data
 INCLUDES	:=	include
 ROMFS		:=	romfs
@@ -57,6 +57,14 @@ VERSION_MICRO := 0
 
 #GFXBUILD	:=	$(ROMFS)/gfx
 
+# aomimi: タイトル ID（UniqueId）とプロダクトコード。meta/nimbus-cia.rsf が使う
+APP_UNIQUE_ID    := 0xD40D3
+APP_PRODUCT_CODE := aomimilink
+AOMIMI_DEFINES   :=
+
+# aomimi: 手元だけの設定の上書き（このリポジトリには含まない）
+-include $(or $(TOPDIR),$(CURDIR))/extra.mk
+
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
@@ -67,7 +75,7 @@ CFLAGS	    :=	-g -Wall $(OPTIMIZE) -mword-relocations \
 			    -ffunction-sections \
 			    $(ARCH)
 
-CFLAGS	    +=	$(INCLUDE) -D__3DS__
+CFLAGS	    +=	$(INCLUDE) -D__3DS__ $(AOMIMI_DEFINES)
 
 CXXFLAGS	:=  $(CFLAGS) -fno-rtti -fno-exceptions -std=c++20
 
@@ -305,6 +313,7 @@ endef
 $(OUTPUT).cia:  $(OUTPUT).elf $(OUTPUT).smdh $(TARGET).bnr $(TOPDIR)/$(RSF_FILE)
 	@makerom -f cia -target t -exefslogo -o $@ \
 	  -elf $(OUTPUT).elf -rsf $(TOPDIR)/$(RSF_FILE) \
+	  -DAPP_UNIQUE_ID=$(APP_UNIQUE_ID) -DAPP_PRODUCT_CODE=$(APP_PRODUCT_CODE) \
 	  -ver "$$(($(VERSION_MAJOR)*1024+$(VERSION_MINOR)*16+$(VERSION_MICRO)))" \
 	  -banner $(TARGET).bnr \
 	  -icon $(OUTPUT).smdh

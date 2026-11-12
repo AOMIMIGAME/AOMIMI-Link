@@ -27,6 +27,8 @@ Modified by the AOMIMI project, starting 2026-11-11. Changes from the original N
 - The scam warning on the top screen is split into three lines, because the longer name did not fit in two.
 - The "Launch plugin" control (Y) is disabled, because the plugin is not distributed. "Unlink PNID" (X) is only shown and used while the Pretendo Network button is selected.
 - When AOMIMI Link is opened on the Nintendo or Pretendo Network account, the AOMIMI event players (PIDs 1999999001 and 1999999002, which only exist on AOMIMI Network) are removed from that friend list if an earlier version left them there. Other friends are not touched.
+- The AOMIMI account remembers which server it points to in `3ds/aomimi/server.txt`. If it points to a server other than AOMIMI Network, selecting AOMIMI switches it back.
+- The screen parts (buttons, top screen notes, controls) are in `app/source/aomimi/ui/`. The title id and product code are passed to `meta/nimbus-cia.rsf` from the Makefile, and local build settings can be placed in `app/extra.mk` (not part of this repository).
 
 ---
 
@@ -59,3 +61,5 @@ AOMIMI Link も同じライセンスで配布しており、ソースコード�
 - 名前が長くなり 2 行に収まらないため、上画面の詐欺に関する注意書きを 3 行に分けました。
 - プラグインを配布しないため、「プラグインを起動」（Y）を無効にしました。「PNID のリンクを解除」（X）は、Pretendo Network のボタンを選んでいるときだけ表示され、使えます。
 - Nintendo または Pretendo Network のアカウントで AOMIMI Link を開いたとき、以前の版が追加した AOMIMI のイベント対戦管理 bot（PID 1999999001 と 1999999002。AOMIMI Network にだけ存在します）がフレンド一覧に残っていれば削除します。ほかのフレンドは変更されません。
+- AOMIMI のアカウントがどの接続先に向いているかを `3ds/aomimi/server.txt` に保存します。AOMIMI Network 以外を指している場合、AOMIMI を選ぶと AOMIMI Network に戻します。
+- 画面の部品（ボタン、上画面の注意書き、操作の説明）は `app/source/aomimi/ui/` にあります。タイトル ID とプロダクトコードは Makefile から `meta/nimbus-cia.rsf` に渡しており、手元だけのビルドの設定は `app/extra.mk` に置けます（このリポジトリには含みません）。

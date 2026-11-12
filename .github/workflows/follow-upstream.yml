@@ -16,6 +16,8 @@ permissions:
 
 jobs:
   merge:
+    # * 公開の AOMIMI-Link でだけ動く（写しのリポジトリでは動かさない）
+    if: github.repository == 'AOMIMIGAME/AOMIMI-Link'
     runs-on: ubuntu-latest
     outputs:
       updated: ${{ steps.merge.outputs.updated }}

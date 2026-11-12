@@ -26,6 +26,8 @@ permissions:
 
 jobs:
   build:
+    # * 公開の AOMIMI-Link でだけ動く（写しのリポジトリでは動かさない）
+    if: github.repository == 'AOMIMIGAME/AOMIMI-Link'
     runs-on: ubuntu-latest
     container: devkitpro/devkitarm:latest
     steps:

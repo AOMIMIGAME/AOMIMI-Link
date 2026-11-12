@@ -27,7 +27,8 @@ version=$(sed -n 's/^VERSION_MAJOR := //p; s/^VERSION_MINOR := //p; s/^VERSION_M
 if [ ! -f "/tmp/combined.$version.zip" ]; then
     curl -fsSL -o "/tmp/combined.$version.zip" "https://github.com/PretendoNetwork/nimbus/releases/download/v$version/combined.$version.zip"
 fi
-python3 aomimi/make_ips.py "/tmp/combined.$version.zip" romfs
+# ALT_HOST を渡すと、その住所向けの IPS の組も作る（手元だけの設定 app/extra.mk と一緒に使う）
+python3 aomimi/make_ips.py "/tmp/combined.$version.zip" romfs "${ALT_HOST:-}"
 make clean >/dev/null 2>&1 || true
 make cia -j4 2>&1 | tail -8
 ls -la "$SRC"/app/*.cia

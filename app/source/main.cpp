@@ -76,6 +76,7 @@ int main()
 	
 	mainStruct.buttonSelected = static_cast<NascEnvironment>(nascEnvironment);
 	mainStruct.currentAccount = mainStruct.buttonSelected;
+	Aomimi::initServer(&mainStruct); // aomimi: AOMIMI のアカウントの接続先を読む
 
 	// NULL-terminate string
 	mainStruct.errorString[0] = 0;

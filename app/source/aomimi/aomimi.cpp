@@ -119,6 +119,7 @@ namespace {
     // * IPS はビルドのときに公式 Nimbus のリリースから作り、romfs に入れてある（app/aomimi/make_ips.py）
     constexpr const char *IPS_AOMIMI = "romfs:/aomimi_ips/aomimi/";
     constexpr const char *IPS_PRETENDO = "romfs:/aomimi_ips/pretendo/";
+    constexpr const char *IPS_ALT = "romfs:/aomimi_ips/alt/"; // * 別の住所の組（あるときだけ）
     constexpr const char *IPS_TARGET = "sdmc:/luma/sysmodules/";
     constexpr const char *IPS_BACKUP = "sdmc:/3ds/aomimi/ips-backup/";
     constexpr Result ResultIpsMissing = MAKERESULT(RL_PERMANENT, RS_NOTFOUND, RM_APPLICATION, RD_NOT_FOUND);
@@ -165,10 +166,10 @@ namespace {
         return names;
     }
 
-    // * aomimi なら AOMIMI 用、そうでなければ公式（Pretendo と Nintendo）の IPS を書く。
+    // * dir の組（AOMIMI 用、別の住所用、公式）の IPS を書く。
     // * 公式の Nimbus も Nintendo のときは IPS を残したままにしている（act の IPS が任天堂の URL を選ぶ）
-    Result installIps(bool aomimi) {
-        const std::vector<std::string> names = listIps(aomimi ? IPS_AOMIMI : IPS_PRETENDO);
+    Result installIps(const char *dir) {
+        const std::vector<std::string> names = listIps(dir);
         if (names.empty()) {
             return ResultIpsMissing;
         }
@@ -176,8 +177,8 @@ namespace {
         mkdir(IPS_TARGET, 0777);
 
         for (const std::string &name : names) {
-            std::vector<u8> wanted, current, ours, theirs;
-            if (!readFile((aomimi ? IPS_AOMIMI : IPS_PRETENDO) + name, wanted)) {
+            std::vector<u8> wanted, current;
+            if (!readFile(dir + name, wanted)) {
                 return ResultIpsMissing;
             }
             const std::string target = IPS_TARGET + name;
@@ -185,14 +186,19 @@ namespace {
                 if (current == wanted) {
                     continue;
                 }
-                // * どちらの組とも違う IPS（自分で入れたものなど）は、最初の 1 回だけ控えてから書く
-                readFile(IPS_AOMIMI + name, ours);
-                readFile(IPS_PRETENDO + name, theirs);
+                // * どの組とも違う IPS（自分で入れたものなど）は、最初の 1 回だけ控えてから書く
+                bool known = false;
+                for (const char *other : { IPS_AOMIMI, IPS_PRETENDO, IPS_ALT }) {
+                    std::vector<u8> data;
+                    if (readFile(other + name, data) && data == current) {
+                        known = true;
+                    }
+                }
                 const std::string backup = IPS_BACKUP + name;
                 FILE *exists = fopen(backup.c_str(), "rb");
                 if (exists) {
                     fclose(exists);
-                } else if (current != ours && current != theirs) {
+                } else if (!known) {
                     mkdir("sdmc:/3ds", 0777);
                     mkdir("sdmc:/3ds/aomimi", 0777);
                     mkdir(IPS_BACKUP, 0777);
@@ -207,9 +213,61 @@ namespace {
         }
         return 0;
     }
+
+    // * --- AOMIMI のアカウント（slot 3）の接続先: AOMIMI Network か、別の住所（alternateHost）か ---
+    // * 同じアカウントのまま接続先だけを変えられるように、今どちらに向いているかを SD に覚えておく。
+    // * 別の住所に向いていたら、AOMIMI を選んだときに AOMIMI Network へ戻す
+    constexpr const char *SERVER_FILE = "sdmc:/3ds/aomimi/server.txt";
+    bool currentAlt = false; // * 今の接続先が別の住所
+    bool selectedAlt = false; // * 選んでいるボタンが別の住所
+
+    bool readCurrentAlt() {
+        std::vector<u8> data;
+        if (!readFile(SERVER_FILE, data)) {
+            return false;
+        }
+        const std::string text(data.begin(), data.end());
+        return !text.starts_with("aomimi");
+    }
+
+    void writeCurrentAlt(bool alt) {
+        mkdir("sdmc:/3ds", 0777);
+        mkdir("sdmc:/3ds/aomimi", 0777);
+        const std::string text = alt ? "alt\n" : "aomimi\n";
+        writeFile(SERVER_FILE, std::vector<u8>(text.begin(), text.end()));
+        currentAlt = alt;
+    }
 }
 
 namespace Aomimi {
+    bool currentAlternate() {
+        return currentAlt;
+    }
+
+    bool selectedAlternate() {
+        return selectedAlt;
+    }
+
+    void selectAlternate(bool alt) {
+        selectedAlt = alt;
+    }
+
+    void initServer(MainStruct *mainStruct) {
+        // * 起動したとき: 今の接続先を読み、選んでいるボタンも今の接続先に合わせる
+        currentAlt = readCurrentAlt();
+        selectedAlt = hasAlternate() && mainStruct->buttonSelected == NascEnvironment::NASC_ENV_Dev && currentAlt;
+    }
+
+    bool serverChangeRequested(MainStruct *mainStruct) {
+        return mainStruct->currentAccount == NascEnvironment::NASC_ENV_Dev && mainStruct->buttonSelected == NascEnvironment::NASC_ENV_Dev
+            && selectedAlt != currentAlt;
+    }
+
+    Result switchServer(MainStruct *mainStruct) {
+        (void)mainStruct;
+        return handleAzahar(ACCOUNT_ID);
+    }
+
     NascEnvironment environmentOf(u8 friend_account_id) {
         if (friend_account_id == ACCOUNT_ID) {
             return NascEnvironment::NASC_ENV_Dev;
@@ -229,9 +287,10 @@ namespace Aomimi {
             return res;
         }
 
+        const bool alt = friend_account_id == ACCOUNT_ID && selectedAlt && hasAlternate();
         for (const char *pattern : PATTERNS) {
             if (friend_account_id == ACCOUNT_ID) {
-                res = registerRule(pattern, HOST);
+                res = registerRule(pattern, alt ? alternateHost() : HOST);
             } else {
                 // * Pretendo や任天堂を選んだら、AOMIMI の規則が先に当たらないように消す
                 res = HTTPC_Azahar_UnregisterURLReplacement(pattern, std::string(pattern).size());
@@ -248,7 +307,10 @@ namespace Aomimi {
         if (res == ResultNoAzaharCommand) {
             // * LLE の HTTP では Azahar の命令がない。代わりに IPS を選んだ先に合わせて書き換える
             // * （次の再起動で読み込まれる）
-            res = installIps(friend_account_id == ACCOUNT_ID);
+            res = installIps(friend_account_id != ACCOUNT_ID ? IPS_PRETENDO : alt ? IPS_ALT : IPS_AOMIMI);
+        }
+        if (R_SUCCEEDED(res) && friend_account_id == ACCOUNT_ID) {
+            writeCurrentAlt(alt);
         }
         return res;
     }
@@ -257,7 +319,7 @@ namespace Aomimi {
         if (!isAzahar() || (u8)mainStruct->currentAccount + 1 != ACCOUNT_ID) {
             return;
         }
-        const Result res = installIps(true);
+        const Result res = installIps(currentAlt && hasAlternate() ? IPS_ALT : IPS_AOMIMI);
         if (R_FAILED(res)) {
             LOG_NIMBUS_ERROR(mainStruct, std::format("Failed to restore the AOMIMI patches: {:08X}", (u32)res).c_str());
         }
@@ -314,138 +376,5 @@ namespace Aomimi {
         }
         // * 起動したときにオンラインなら、足りない相手だけ黙って足す（ログインはしない。待たせないため）
         addPlayers(mainStruct, false, false);
-    }
-}
-
-namespace {
-    // * 左から AOMIMI、Pretendo、任天堂。公式の 2 つのボタン（幅 104）を 0.9 倍にして 3 つ並べる
-    constexpr NascEnvironment ORDER[3] = { NascEnvironment::NASC_ENV_Dev, NascEnvironment::NASC_ENV_Test, NascEnvironment::NASC_ENV_Prod };
-    constexpr float SCALE = 0.9f;
-    constexpr float BUTTON_X[3] = { 10.0f, 113.0f, 216.0f };
-    constexpr float BUTTON_Y = 64.0f;
-    constexpr float BUTTON_W = 104.0f * SCALE;
-    constexpr float BUTTON_H = 113.0f * SCALE;
-
-    // * [環境][loaded][selected]
-    C2D_Sprite *spriteOf(MainStruct *m, NascEnvironment environment, bool loaded, bool selected) {
-        switch (environment) {
-        case NascEnvironment::NASC_ENV_Dev:
-            return loaded ? (selected ? &m->aomimi_loaded_selected : &m->aomimi_loaded_deselected)
-                          : (selected ? &m->aomimi_unloaded_selected : &m->aomimi_unloaded_deselected);
-        case NascEnvironment::NASC_ENV_Test:
-            return loaded ? (selected ? &m->pretendo_loaded_selected : &m->pretendo_loaded_deselected)
-                          : (selected ? &m->pretendo_unloaded_selected : &m->pretendo_unloaded_deselected);
-        default:
-            return loaded ? (selected ? &m->nintendo_loaded_selected : &m->nintendo_loaded_deselected)
-                          : (selected ? &m->nintendo_unloaded_selected : &m->nintendo_unloaded_deselected);
-        }
-    }
-
-    int indexOf(NascEnvironment environment) {
-        for (int n = 0; n < 3; n++) {
-            if (ORDER[n] == environment) {
-                return n;
-            }
-        }
-        return 2;
-    }
-}
-
-namespace Aomimi {
-    void placeButtons(MainStruct *mainStruct) {
-        for (int n = 0; n < 3; n++) {
-            for (int loaded = 0; loaded < 2; loaded++) {
-                for (int selected = 0; selected < 2; selected++) {
-                    C2D_Sprite *sprite = spriteOf(mainStruct, ORDER[n], loaded, selected);
-                    C2D_SpriteSetScale(sprite, SCALE, SCALE);
-                    C2D_SpriteSetPos(sprite, BUTTON_X[n], BUTTON_Y);
-                }
-            }
-        }
-    }
-
-    void drawButtons(MainStruct *mainStruct) {
-        for (const NascEnvironment environment : ORDER) {
-            C2D_DrawSprite(spriteOf(mainStruct, environment, mainStruct->currentAccount == environment, mainStruct->buttonSelected == environment));
-        }
-    }
-
-    bool handleButtonInput(MainStruct *mainStruct, u32 kDown, touchPosition touch) {
-        if (kDown & KEY_TOUCH) {
-            for (int n = 0; n < 3; n++) {
-                if (touch.px >= BUTTON_X[n] && touch.px <= BUTTON_X[n] + BUTTON_W && touch.py >= BUTTON_Y && touch.py <= BUTTON_Y + BUTTON_H) {
-                    mainStruct->buttonSelected = ORDER[n];
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        int index = indexOf(mainStruct->buttonSelected);
-        if (kDown & KEY_LEFT) {
-            mainStruct->buttonSelected = ORDER[(index + 2) % 3];
-        } else if (kDown & KEY_RIGHT) {
-            mainStruct->buttonSelected = ORDER[(index + 1) % 3];
-        }
-        return false;
-    }
-}
-
-namespace Aomimi {
-    void drawNotice() {
-        // * 真ん中の絵（高さ 76、中心 120）と、下の注意書き（2 行）のあいだに置く
-        static const char *lines[2] = {
-            "Based on Nimbus by Pretendo Network (GPL-3.0)",
-            "Not affiliated with Pretendo Network or Nintendo",
-        };
-        const float size = 0.42f;
-        float y = 162.0f;
-        C2D_TextBufClear(textBuf); // * 公式の文字の描き方と同じく、使う前に空にする
-        for (const char *line : lines) {
-            C2D_Text text;
-            C2D_TextFontParse(&text, font, textBuf, line);
-            C2D_TextOptimize(&text);
-            C2D_DrawText(&text, C2D_WithColor | C2D_AlignCenter, 200.0f, y, 0.5f, size, size, C2D_Color32(170, 175, 190, 0xFF));
-            y += GetStringHeight(size, line);
-        }
-    }
-}
-
-namespace Aomimi {
-    void drawScamWarning() {
-        const std::string lines[3] = {
-            std::format("{} is free and open-source.", APP_TITLE),
-            "If you paid to have it installed, you have been scammed.",
-            "Demand your money back",
-        };
-        const float size = 0.45f;
-        const float offset = 6.0f;
-        float height = 0.0f;
-        for (const auto &line : lines) {
-            height += GetStringHeight(size, line.c_str());
-        }
-
-        C2D_TextBufClear(textBuf);
-        float y = (240 + 2) - offset - height;
-        for (const auto &line : lines) {
-            C2D_Text text;
-            C2D_TextFontParse(&text, font, textBuf, line.c_str());
-            C2D_TextOptimize(&text);
-            C2D_DrawText(&text, C2D_WithColor | C2D_AlignLeft, offset, y, 0.5f, size, size, C2D_Color32(255, 255, 255, 0xFF));
-            y += GetStringHeight(size, line.c_str());
-        }
-    }
-
-    void drawControls(MainStruct *mainStruct) {
-        const char *text = mainStruct->buttonSelected == NascEnvironment::NASC_ENV_Test ? "A: Select\nX: Unlink PNID" : "A: Select";
-        const float size = 0.5f;
-        const float offset = 6.0f;
-        const float bottom = (240 + 2) - offset;
-
-        C2D_TextBufClear(textBuf);
-        C2D_Text c2d_text;
-        C2D_TextFontParse(&c2d_text, font, textBuf, text);
-        C2D_TextOptimize(&c2d_text);
-        C2D_DrawText(&c2d_text, C2D_WithColor | C2D_AlignLeft, offset, bottom - GetStringHeight(size, text), 0.5f, size, size, C2D_Color32(255, 255, 255, 0xFF));
     }
 }

@@ -755,6 +755,17 @@ bool MainUI::drawUI(MainStruct *mainStruct, C3D_RenderTarget* top_screen, C3D_Re
         mainStruct->errorString[0] = 0;
 
         // If the chosen account is the one we are already logged into, exit without rebooting
+        if (mainStruct->currentAccount == mainStruct->buttonSelected && Aomimi::serverChangeRequested(mainStruct)) {
+            // aomimi: 同じ AOMIMI のアカウントのまま、接続先だけを切り替えて再起動する
+            Result rc = Aomimi::switchServer(mainStruct);
+            if (R_FAILED(rc)) {
+                LOG_NIMBUS_ERROR(mainStruct, std::format("Failed to switch the server: {:08X}", (u32)rc).c_str());
+                mainStruct->buttonWasPressed = false;
+                return false;
+            }
+            mainStruct->needsReboot = true;
+            return true;
+        }
         if (mainStruct->currentAccount == mainStruct->buttonSelected) {
             // aomimi: アプリを閉じずに「使用中」と出す（Azahar から直接開いたときに HOME へ戻れず落ちるため）
             // aomimi: AOMIMI ならアカウントは変わらずオンラインのままなので、ここでイベントの相手をフレンドに足す
