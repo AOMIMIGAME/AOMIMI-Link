@@ -6,6 +6,8 @@
 namespace Aomimi {
     // * 公式の MainUI::handleAzahar（Pretendo の規則）のあとに、AOMIMI の規則を入れる・消す
     Result handleAzahar(u8 friend_account_id);
+    // * 公式の更新（3ds/nimbus/update）で公式の IPS が入ったあと、AOMIMI のアカウントなら AOMIMI 用に戻す（LLE の Azahar 用）
+    void restoreIpsAfterUpdate(MainStruct *mainStruct);
 
     // * イベントの相手をフレンドに足す。失敗しても切り替えは止めない（イベントに出られないだけ）
     void addEventPlayers(MainStruct *mainStruct);
@@ -13,6 +15,8 @@ namespace Aomimi {
     void addEventPlayersAfterSwitch(MainStruct *mainStruct);
     // * 起動したときに 1 回だけ: AOMIMI のアカウントなら足りない相手を黙って足す。Pretendo・任天堂のアカウントなら、残っているイベントの相手を消す
     void checkEventPlayersOnce(MainStruct *mainStruct);
+    // * 使用中のアカウントを選んだとき: アプリを閉じずに、もう切り替えてあることを出す
+    void showAlreadySelected(MainStruct *mainStruct);
 
     // * フレンドのアカウントを作るときの環境（2 = Pretendo は Test、3 = AOMIMI は Dev）
     NascEnvironment environmentOf(u8 friend_account_id);

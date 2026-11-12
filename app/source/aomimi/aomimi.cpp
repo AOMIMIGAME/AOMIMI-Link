@@ -1,5 +1,9 @@
+#include <cstdio>
+#include <dirent.h>
 #include <format>
 #include <string>
+#include <sys/stat.h>
+#include <vector>
 #include "aomimi.hpp"
 #include "../states/MainUI.hpp"
 #include "../sysmodules/httpc.hpp"
@@ -109,6 +113,100 @@ namespace {
         }
         return res;
     }
+
+    // * --- LLE の Azahar（「オンラインに必要な LLE モジュール」が有効）---
+    // * HLE の URL の置き換えが使えないので、本物の 3DS と同じく luma/sysmodules の IPS で接続先を決める。
+    // * IPS はビルドのときに公式 Nimbus のリリースから作り、romfs に入れてある（app/aomimi/make_ips.py）
+    constexpr const char *IPS_AOMIMI = "romfs:/aomimi_ips/aomimi/";
+    constexpr const char *IPS_PRETENDO = "romfs:/aomimi_ips/pretendo/";
+    constexpr const char *IPS_TARGET = "sdmc:/luma/sysmodules/";
+    constexpr const char *IPS_BACKUP = "sdmc:/3ds/aomimi/ips-backup/";
+    constexpr Result ResultIpsMissing = MAKERESULT(RL_PERMANENT, RS_NOTFOUND, RM_APPLICATION, RD_NOT_FOUND);
+    constexpr Result ResultIpsWrite = MAKERESULT(RL_PERMANENT, RS_CANCELED, RM_APPLICATION, RD_NO_DATA);
+
+    bool readFile(const std::string &path, std::vector<u8> &data) {
+        FILE *f = fopen(path.c_str(), "rb");
+        if (!f) {
+            return false;
+        }
+        data.clear();
+        u8 buffer[1024];
+        size_t n;
+        while ((n = fread(buffer, 1, sizeof(buffer), f)) > 0) {
+            data.insert(data.end(), buffer, buffer + n);
+        }
+        const bool ok = !ferror(f);
+        fclose(f);
+        return ok;
+    }
+
+    bool writeFile(const std::string &path, const std::vector<u8> &data) {
+        FILE *f = fopen(path.c_str(), "wb");
+        if (!f) {
+            return false;
+        }
+        const bool ok = fwrite(data.data(), 1, data.size(), f) == data.size();
+        return fclose(f) == 0 && ok;
+    }
+
+    std::vector<std::string> listIps(const char *dir) {
+        std::vector<std::string> names;
+        DIR *d = opendir(dir);
+        if (!d) {
+            return names;
+        }
+        while (dirent *entry = readdir(d)) {
+            const std::string name = entry->d_name;
+            if (name.size() > 4 && name.ends_with(".ips")) {
+                names.push_back(name);
+            }
+        }
+        closedir(d);
+        return names;
+    }
+
+    // * aomimi なら AOMIMI 用、そうでなければ公式（Pretendo と Nintendo）の IPS を書く。
+    // * 公式の Nimbus も Nintendo のときは IPS を残したままにしている（act の IPS が任天堂の URL を選ぶ）
+    Result installIps(bool aomimi) {
+        const std::vector<std::string> names = listIps(aomimi ? IPS_AOMIMI : IPS_PRETENDO);
+        if (names.empty()) {
+            return ResultIpsMissing;
+        }
+        mkdir("sdmc:/luma", 0777);
+        mkdir(IPS_TARGET, 0777);
+
+        for (const std::string &name : names) {
+            std::vector<u8> wanted, current, ours, theirs;
+            if (!readFile((aomimi ? IPS_AOMIMI : IPS_PRETENDO) + name, wanted)) {
+                return ResultIpsMissing;
+            }
+            const std::string target = IPS_TARGET + name;
+            if (readFile(target, current)) {
+                if (current == wanted) {
+                    continue;
+                }
+                // * どちらの組とも違う IPS（自分で入れたものなど）は、最初の 1 回だけ控えてから書く
+                readFile(IPS_AOMIMI + name, ours);
+                readFile(IPS_PRETENDO + name, theirs);
+                const std::string backup = IPS_BACKUP + name;
+                FILE *exists = fopen(backup.c_str(), "rb");
+                if (exists) {
+                    fclose(exists);
+                } else if (current != ours && current != theirs) {
+                    mkdir("sdmc:/3ds", 0777);
+                    mkdir("sdmc:/3ds/aomimi", 0777);
+                    mkdir(IPS_BACKUP, 0777);
+                    if (!writeFile(backup, current)) {
+                        return ResultIpsWrite;
+                    }
+                }
+            }
+            if (!writeFile(target, wanted)) {
+                return ResultIpsWrite;
+            }
+        }
+        return 0;
+    }
 }
 
 namespace Aomimi {
@@ -146,11 +244,32 @@ namespace Aomimi {
             }
         }
 
-        if (res == ResultNoAzaharCommand) {
-            res = 0; // * LLE の HTTP では Azahar の命令がない
-        }
         httpcExit();
+        if (res == ResultNoAzaharCommand) {
+            // * LLE の HTTP では Azahar の命令がない。代わりに IPS を選んだ先に合わせて書き換える
+            // * （次の再起動で読み込まれる）
+            res = installIps(friend_account_id == ACCOUNT_ID);
+        }
         return res;
+    }
+
+    void restoreIpsAfterUpdate(MainStruct *mainStruct) {
+        if (!isAzahar() || (u8)mainStruct->currentAccount + 1 != ACCOUNT_ID) {
+            return;
+        }
+        const Result res = installIps(true);
+        if (R_FAILED(res)) {
+            LOG_NIMBUS_ERROR(mainStruct, std::format("Failed to restore the AOMIMI patches: {:08X}", (u32)res).c_str());
+        }
+    }
+
+    void showAlreadySelected(MainStruct *mainStruct) {
+        // * イベントの相手を足せなかったときは、その文（先に入っている）を残す
+        if ((u8)mainStruct->currentAccount + 1 == ACCOUNT_ID) {
+            LOG_NIMBUS_ERROR(mainStruct, "You are already using this account.\nThe event battle bots are in your friend list.");
+        } else {
+            LOG_NIMBUS_ERROR(mainStruct, "You are already using this account.");
+        }
     }
 
     void addEventPlayers(MainStruct *mainStruct) {

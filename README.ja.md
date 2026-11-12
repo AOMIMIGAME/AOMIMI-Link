@@ -16,7 +16,8 @@ Pretendo Network および任天堂とは関係ありません。AOMIMI Link に
     - アカウントを切り替えると、本体が再起動します
 
 - Pretendo か Nintendo のアカウントで AOMIMI Link を開くと、そのフレンド一覧に残っているイベント対戦管理 bot は削除されます（ほかのフレンドは変更されません）
-- AOMIMI Link は Azahar 専用です。実機用の IPS パッチとプラグインは含まれていません
+- AOMIMI Link は Azahar 専用です。実機には対応していません
+- Azahar で「オンラインに必要な LLE モジュール」が有効な場合は、アカウントの切り替え時に `luma/sysmodules` の IPS が自動で書き換えられます。既存の IPS は、初回のみ `3ds/aomimi/ips-backup` に保存されます
 - 更新するときは、同じ URL を FBI でもう一度読み込んでください。常に最新版がインストールされます
 
 ## ビルド

@@ -16,7 +16,8 @@ It is not affiliated with Pretendo Network or Nintendo. Please do not contact Pr
     - Switching accounts reboots the system
 
 - When AOMIMI Link is opened on a Pretendo or Nintendo account, any remaining event battle bots are removed from that friend list (other friends are not affected)
-- AOMIMI Link is for Azahar only. The IPS patches and the plugin for real hardware are not included
+- AOMIMI Link is for Azahar only. Real hardware is not supported
+- If "required online LLE modules" is enabled in Azahar, the IPS patches in `luma/sysmodules` are replaced automatically when switching accounts. Existing IPS patches are saved to `3ds/aomimi/ips-backup` the first time
 - To update, scan the same URL with FBI again. The latest version is always installed
 
 ## Building

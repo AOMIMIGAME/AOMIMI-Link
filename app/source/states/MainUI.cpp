@@ -554,6 +554,8 @@ bool MainUI::drawUI(MainStruct *mainStruct, C3D_RenderTarget* top_screen, C3D_Re
                 std::rename(NIMBUS_UPDATE_PATH "/juxt-prod.pem",        "/3ds/juxt-prod.pem");
 
                 std::remove(NIMBUS_UPDATE_PATH "/update.txt");
+
+                Aomimi::restoreIpsAfterUpdate(mainStruct); // aomimi: AOMIMI のアカウントなら、上で入った公式の IPS を AOMIMI 用に戻す
             }
 
             // Logs won't override any previous errors
@@ -754,15 +756,14 @@ bool MainUI::drawUI(MainStruct *mainStruct, C3D_RenderTarget* top_screen, C3D_Re
 
         // If the chosen account is the one we are already logged into, exit without rebooting
         if (mainStruct->currentAccount == mainStruct->buttonSelected) {
-            // aomimi: アカウントは変わらずオンラインのままなので、ここでイベントの相手をフレンドに足す
+            // aomimi: アプリを閉じずに「使用中」と出す（Azahar から直接開いたときに HOME へ戻れず落ちるため）
+            // aomimi: AOMIMI ならアカウントは変わらずオンラインのままなので、ここでイベントの相手をフレンドに足す
             if ((u8)mainStruct->buttonSelected + 1 == Aomimi::ACCOUNT_ID) {
                 Aomimi::addEventPlayers(mainStruct);
-                if (mainStruct->errorString[0] != 0) {
-                    mainStruct->buttonWasPressed = false;
-                    return false;
-                }
             }
-            return true;
+            Aomimi::showAlreadySelected(mainStruct);
+            mainStruct->buttonWasPressed = false;
+            return false;
         }
 
         u8 accountId = (u8)mainStruct->buttonSelected + 1; // by default set accountId to nasc environment + 1

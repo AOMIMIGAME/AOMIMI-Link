@@ -10,8 +10,8 @@ namespace Aomimi {
     // * 3 つ目のフレンドのアカウント。公式は 1 = 任天堂、2 = Pretendo を使い、環境 Dev（2）は空いている
     constexpr u8 ACCOUNT_ID = 3;
 
-    // * Azahar の URL の置き換え先。ドメインができたら差し替える
-    constexpr const char *HOST = "192.168.0.200";
+    // * Azahar の URL の置き換え先（AOMIMI Network のドメイン）
+    constexpr const char *HOST = "aomimi.f5.si";
 
     // * Azahar の置き換えの規則。ホスト名を丸ごと置き換える（IP でも動くように）
     constexpr std::array<const char *, 3> PATTERNS = {{
