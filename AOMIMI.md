@@ -27,3 +27,35 @@ Modified by the AOMIMI project, starting 2026-11-11. Changes from the original N
 - The scam warning on the top screen is split into three lines, because the longer name did not fit in two.
 - The "Launch plugin" control (Y) is disabled, because the plugin is not distributed. "Unlink PNID" (X) is only shown and used while the Pretendo Network button is selected.
 - When AOMIMI Link is opened on the Nintendo or Pretendo Network account, the AOMIMI event players (PIDs 1999999001 and 1999999002, which only exist on AOMIMI Network) are removed from that friend list if an earlier version left them there. Other friends are not touched.
+
+---
+
+# AOMIMI Link（日本語）
+
+AOMIMI Link は、Pretendo Network の [Nimbus](https://github.com/PretendoNetwork/nimbus) をもとにした改造版です。
+3DS の接続先を、AOMIMI Network・Pretendo Network・Nintendo の 3 つのオンラインサービスの間で切り替えます。
+
+AOMIMI Link は、Pretendo Network および任天堂とは関係がなく、承認や支援も受けていません。
+AOMIMI Link について、Pretendo Network に問い合わせないでください。
+
+## ライセンス
+
+Nimbus は GNU General Public License v3.0 で公開されています（`LICENSE` を参照）。
+AOMIMI Link も同じライセンスで配布しており、ソースコードはすべてこのリポジトリで公開しています。
+
+## 変更点
+
+2026-11-11 から AOMIMI プロジェクトが改造しています。元の Nimbus からの変更点は次のとおりです。
+
+- Nintendo（アカウント 1）と Pretendo Network（アカウント 2）に加えて、AOMIMI Network 用の 3 つ目のアカウント（フレンドのアカウント 3、NASC の環境 Dev）を追加しました。Pretendo Network のアカウントは、元の Nimbus と同じように動作します。
+- Azahar では、AOMIMI のアカウントを選んだときに AOMIMI Network 用の URL の置き換えの規則を登録し、それ以外を選んだときに削除します（`app/source/aomimi/`）。
+- アカウントの画面に 3 つのボタンを表示します。ボタンの画像、ホームメニューのアイコン、バナー、上画面の画像を新しくしました（`app/aomimi/make_buttons.py`、`app/aomimi/make_meta.py`）。Pretendo Network のロゴは、Pretendo Network のアカウントを選ぶボタンにだけ使っています。
+- AOMIMI のアカウントに切り替えた直後（再起動の前）に、AOMIMI のイベント対戦管理 bot をフレンドに追加します。追加できなかった場合は、次に AOMIMI のアカウントで AOMIMI Link を開いたとき、または AOMIMI のアカウントをもう一度選んだときに追加します。
+- アプリの名前を AOMIMI Link に変更しました（タイトル ID `0xD40D3`。元の Nimbus と並べてインストールできます）。ホームメニューの発行元は AOMIMIGAME と表示されます。元の作者は README と上画面に記載しています。
+- ビルドして配布するのはアプリだけです。システムモジュールのパッチのソースと実機用のプラグインは変更しておらず、プラグインは AOMIMI Link に含まれていません。
+- 「オンラインに必要な LLE モジュール」が有効な Azahar（HLE の URL の置き換えが使えない場合）向けに、システムモジュールの IPS を 2 組埋め込み、アカウントの切り替え時に対応する組を `luma/sysmodules` に書き込みます。Pretendo Network と Nintendo には公式 Nimbus の IPS、AOMIMI Network には接続先を変更した IPS を使います。この 2 組は、ビルド時に同じ版の公式 Nimbus のリリースから作成します（`app/aomimi/make_ips.py`）。NASC とアカウントの URL を AOMIMI Network の接続先に置き換え、そのほかの Pretendo Network のホスト名は解決できない名前に置き換えています。どちらの組とも一致しない既存の IPS は、初回のみ `3ds/aomimi/ips-backup` に保存します。公式 Nimbus の更新（`3ds/nimbus/update`）のあとは、AOMIMI のアカウントが選ばれていれば AOMIMI 用の IPS に戻します。
+- 使用中のアカウントを選んだときに、アプリを終了しないようにしました（Azahar から直接起動した場合に終了できず、落ちていたため）。代わりにメッセージを表示します。
+- AOMIMI Network の接続先は、ドメイン `aomimi.f5.si` です。
+- 名前が長くなり 2 行に収まらないため、上画面の詐欺に関する注意書きを 3 行に分けました。
+- プラグインを配布しないため、「プラグインを起動」（Y）を無効にしました。「PNID のリンクを解除」（X）は、Pretendo Network のボタンを選んでいるときだけ表示され、使えます。
+- Nintendo または Pretendo Network のアカウントで AOMIMI Link を開いたとき、以前の版が追加した AOMIMI のイベント対戦管理 bot（PID 1999999001 と 1999999002。AOMIMI Network にだけ存在します）がフレンド一覧に残っていれば削除します。ほかのフレンドは変更されません。
