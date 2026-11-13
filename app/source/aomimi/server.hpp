@@ -20,9 +20,6 @@ namespace Aomimi {
         "^.*pokemon-gl\\.com$",
     }};
 
-    // * イベントの相手（サーバーの偽のプレイヤー）。フレンドに足すとゲームに出てくる
-    constexpr std::array<u32, 2> EVENT_PLAYERS = {{ 1999999001, 1999999002 }};
-
     // * 実機用のプラグイン（nimbus.3gx）は配らないので、Y の「プラグインを起動」は使わない
     constexpr bool PLUGIN_ENABLED = false;
 }

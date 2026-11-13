@@ -12,10 +12,9 @@ It is not affiliated with Pretendo Network or Nintendo. Please do not contact Pr
     - `https://github.com/AOMIMIGAME/AOMIMI-Link/releases/latest/download/aomimi-link.cia`
 2. Run AOMIMI Link in Azahar and select whether to use an AOMIMI, Pretendo or Nintendo account
     - The first time you select AOMIMI, a new account for AOMIMI Network is created
-    - Selecting AOMIMI also adds the event battle bots to your friend list (if this fails, they will be added the next time AOMIMI Link is opened)
     - Switching accounts reboots the system
 
-- When AOMIMI Link is opened on a Pretendo or Nintendo account, any remaining event battle bots are removed from that friend list (other friends are not affected)
+- The event battle bots appear in the friend list in Yo-kai Watch 2 from the start, so there is no need to add them as friends
 - AOMIMI Link is for Azahar only. Real hardware is not supported
 - If "required online LLE modules" is enabled in Azahar, the IPS patches in `luma/sysmodules` are replaced automatically when switching accounts. Existing IPS patches are saved to `3ds/aomimi/ips-backup` the first time
 - To update, scan the same URL with FBI again. The latest version is always installed

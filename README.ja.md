@@ -12,10 +12,9 @@ Pretendo Network および任天堂とは関係ありません。AOMIMI Link に
     - `https://github.com/AOMIMIGAME/AOMIMI-Link/releases/latest/download/aomimi-link.cia`
 2. Azahar で AOMIMI Link を起動し、AOMIMI・Pretendo・Nintendo のどのアカウントを使うかを選ぶ
     - AOMIMI を初めて選んだときは、AOMIMI Network 用のアカウントが新しく作られます
-    - AOMIMI を選ぶと、イベント対戦管理 bot もフレンドに追加されます（追加できなかった場合は、次に AOMIMI Link を開いたときに追加されます）
     - アカウントを切り替えると、本体が再起動します
 
-- Pretendo か Nintendo のアカウントで AOMIMI Link を開くと、そのフレンド一覧に残っているイベント対戦管理 bot は削除されます（ほかのフレンドは変更されません）
+- イベント対戦管理 bot は、妖怪ウォッチ2 のフレンドの一覧に最初から表示されます。フレンドに追加する必要はありません
 - AOMIMI Link は Azahar 専用です。実機には対応していません
 - Azahar で「オンラインに必要な LLE モジュール」が有効な場合は、アカウントの切り替え時に `luma/sysmodules` の IPS が自動で書き換えられます。既存の IPS は、初回のみ `3ds/aomimi/ips-backup` に保存されます
 - 更新するときは、同じ URL を FBI でもう一度読み込んでください。常に最新版がインストールされます

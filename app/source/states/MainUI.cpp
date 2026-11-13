@@ -661,8 +661,6 @@ bool MainUI::drawUI(MainStruct *mainStruct, C3D_RenderTarget* top_screen, C3D_Re
         }
     }
 
-    Aomimi::checkEventPlayersOnce(mainStruct); // aomimi: AOMIMI なら足りないイベントの相手を足し、Pretendo・任天堂なら残りを消す
-
     // if start is pressed, exit to hbl/the home menu depending on if the app was launched from cia or 3dsx
     if (kDown & KEY_START) return true;
 
@@ -768,10 +766,6 @@ bool MainUI::drawUI(MainStruct *mainStruct, C3D_RenderTarget* top_screen, C3D_Re
         }
         if (mainStruct->currentAccount == mainStruct->buttonSelected) {
             // aomimi: アプリを閉じずに「使用中」と出す（Azahar から直接開いたときに HOME へ戻れず落ちるため）
-            // aomimi: AOMIMI ならアカウントは変わらずオンラインのままなので、ここでイベントの相手をフレンドに足す
-            if ((u8)mainStruct->buttonSelected + 1 == Aomimi::ACCOUNT_ID) {
-                Aomimi::addEventPlayers(mainStruct);
-            }
             Aomimi::showAlreadySelected(mainStruct);
             mainStruct->buttonWasPressed = false;
             return false;
@@ -799,10 +793,6 @@ bool MainUI::drawUI(MainStruct *mainStruct, C3D_RenderTarget* top_screen, C3D_Re
             mainStruct->needsReboot = true;
             mainStruct->buttonWasPressed = false;
             return false;
-        }
-
-        if (accountId == Aomimi::ACCOUNT_ID) {
-            Aomimi::addEventPlayersAfterSwitch(mainStruct); // aomimi: 再起動の前にイベントの相手をフレンドに足す
         }
 
         mainStruct->needsReboot = true;
